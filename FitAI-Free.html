@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FitAI — Free AI Fitness Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F6F3;--surface:#fff;--surface2:#F1EFE8;
+  --border:rgba(0,0,0,.09);--border2:rgba(0,0,0,.14);
+  --text:#1a1a18;--muted:#6B6A65;--hint:#9E9D97;
+  --accent:#1D9E75;--accent-lt:#E1F5EE;--accent-dk:#0F6E56;
+  --r:12px;--r-sm:8px;--sidebar:220px;
+}
+body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+.hidden{display:none!important}
+
+/* LOGIN */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:linear-gradient(135deg,#0a1628,#0d2040 60%,#0a2a1a)}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.35}
+.orb1{width:400px;height:400px;background:#1D9E75;top:-100px;right:-80px}
+.orb2{width:350px;height:350px;background:#185FA5;bottom:-80px;left:-60px}
+.orb3{width:250px;height:250px;background:#5DCAA5;top:40%;left:40%}
+.login-card{position:relative;background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.15);backdrop-filter:blur(20px);border-radius:20px;padding:40px;width:100%;max-width:420px;z-index:1}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:22px;font-weight:600;color:#fff}
+.logo-ic{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff}
+.logo-ic.sm{width:28px;height:28px;font-size:14px;border-radius:6px}
+.login-title{font-size:26px;font-weight:600;color:#fff;margin-bottom:6px}
+.login-sub{color:rgba(255,255,255,.55);font-size:14px;margin-bottom:28px}
+.login-hint{text-align:center;font-size:12px;color:rgba(255,255,255,.35);margin-top:14px}
+.lform-g{margin-bottom:14px}
+.lform-g label{display:block;font-size:12px;color:rgba(255,255,255,.6);margin-bottom:6px}
+.lform-g input{width:100%;padding:10px 14px;background:rgba(255,255,255,.08);border:0.5px solid rgba(255,255,255,.18);border-radius:8px;color:#fff;font-size:14px}
+.lform-g input:focus{outline:none;border-color:var(--accent)}
+
+/* FREE BADGE */
+.free-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(29,158,117,.25);border:0.5px solid rgba(29,158,117,.4);color:#9FE1CB;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;margin-bottom:20px}
+
+/* APP */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar);background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:20px 18px 16px;font-size:17px;font-weight:600;border-bottom:0.5px solid var(--border)}
+.sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:13.5px;cursor:pointer;transition:all .12s;text-align:left}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent-lt);color:var(--accent-dk);font-weight:500}
+.nav-item svg{width:17px;height:17px;flex-shrink:0}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:14px;border-top:0.5px solid var(--border)}
+.user-av{width:32px;height:32px;border-radius:50%;background:var(--accent-lt);color:var(--accent-dk);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.user-nm{font-size:13px;font-weight:500}
+.user-gl{font-size:11px;color:var(--muted)}
+.logout-btn{background:none;border:none;cursor:pointer;color:var(--hint);padding:4px;border-radius:6px;margin-left:auto}
+.logout-btn:hover{color:var(--muted);background:var(--surface2)}
+
+/* MAIN */
+.main{margin-left:var(--sidebar);flex:1;padding:28px;max-width:1100px}
+.tab-content{display:none}.tab-content.active{display:block}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px}
+.page-title{font-size:22px;font-weight:600}
+.page-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.ai-badge{background:var(--accent-lt);color:var(--accent-dk);font-size:12px;font-weight:500;padding:5px 12px;border-radius:20px}
+.ai-badge.sm{font-size:11px;padding:3px 10px}
+.badge{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px}
+.badge.green{background:#E1F5EE;color:#0F6E56}
+.badge.blue{background:#E6F1FB;color:#185FA5}
+.badge.amber{background:#FAEEDA;color:#854F0B}
+
+/* CARDS */
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-header h3{font-size:14px;font-weight:500}
+.card-action{font-size:12px;color:var(--accent);background:var(--accent-lt);border:none;border-radius:8px;padding:4px 10px;cursor:pointer}
+
+/* METRIC GRID */
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.metric-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.metric-card.compact{display:block}
+.metric-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.metric-body{flex:1;min-width:0}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:2px}
+.metric-value{font-size:20px;font-weight:600}
+.metric-value.green{color:var(--accent)}
+.metric-sub{font-size:11px;color:var(--hint)}
+.metric-ring{position:relative;width:44px;height:44px;flex-shrink:0}
+.metric-ring svg{width:44px;height:44px;transform:rotate(-90deg)}
+.metric-ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--muted)}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.food-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.food-row:last-child{border-bottom:none}
+.food-info{display:flex;flex-direction:column}
+.food-name{font-size:13px;font-weight:500}
+.food-macro{font-size:11px;color:var(--hint)}
+.food-cal{font-size:13px;color:var(--muted);font-family:monospace}
+
+.macro-section{display:flex;flex-direction:column;gap:10px}
+.macro-row{display:flex;align-items:center;gap:10px}
+.macro-label{font-size:12px;color:var(--muted);width:58px}
+.macro-track{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.macro-fill{height:100%;border-radius:3px}
+.macro-val{font-size:11px;color:var(--muted);font-family:monospace;width:70px;text-align:right}
+
+.suggestions{display:flex;flex-direction:column}
+.sug-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.sug-item:last-child{border-bottom:none}
+.sug-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sug-text{font-size:13px;color:var(--text);line-height:1.5}
+.sug-tag{font-size:11px;color:var(--hint);margin-top:2px}
+
+/* AI BTN */
+.ai-block{margin-top:16px;padding-top:14px;border-top:0.5px solid var(--border)}
+.ai-btn{display:flex;align-items:center;gap:8px;padding:9px 16px;background:var(--accent-lt);color:var(--accent-dk);border:0.5px solid rgba(29,158,117,.2);border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;width:auto}
+.ai-btn:hover{background:#c8eddf}
+.ai-btn.wide{width:100%;justify-content:center;font-size:14px;padding:12px;margin-bottom:14px}
+.ai-btn:disabled{opacity:.6;cursor:not-allowed}
+.ai-out{background:var(--accent-lt);border-radius:8px;padding:14px 16px;font-size:13px;color:#085041;line-height:1.75;margin-top:12px;white-space:pre-wrap}
+
+/* FORMS */
+.form-stack{display:flex;flex-direction:column;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:12px;color:var(--muted)}
+.form-group input,.form-group select{padding:9px 12px;border:0.5px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;width:100%}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer;width:100%}
+.btn-primary:hover{background:var(--accent-dk)}
+.btn-primary.sm{width:auto;padding:7px 14px;font-size:13px}
+.btn-secondary{background:var(--surface2);color:var(--text);border:0.5px solid var(--border2);border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;width:100%}
+
+/* FOOD SEARCH */
+.search-row{display:flex;gap:8px;margin-bottom:12px}
+.search-row input{flex:1;padding:10px 14px;border:0.5px solid var(--border2);border-radius:8px;font-size:14px;color:var(--text);background:var(--surface)}
+.search-row input:focus{outline:none;border-color:var(--accent)}
+.search-row .btn-primary{width:auto}
+.quick-picks{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px}
+.qp-label{font-size:12px;color:var(--muted)}
+.chip{font-size:12px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border);border-radius:20px;cursor:pointer;color:var(--text)}
+.chip:hover{background:var(--accent-lt);color:var(--accent-dk)}
+
+.src-card{border:0.5px solid rgba(29,158,117,.3);border-radius:var(--r);padding:16px;background:var(--surface);margin-top:14px}
+.src-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.src-name{font-size:17px;font-weight:600}
+.src-cal{font-size:22px;font-weight:600;color:var(--accent)}
+.src-macro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.srm{background:var(--surface2);border-radius:8px;padding:10px;text-align:center}
+.srm-val{font-size:18px;font-weight:600}
+.srm-label{font-size:11px;color:var(--muted)}
+
+/* FOOD SEARCH TABS */
+.search-tabs{display:flex;gap:4px;margin-bottom:14px}
+.stab{padding:6px 14px;border-radius:8px;border:0.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer}
+.stab.active{background:var(--surface);border-color:var(--border2);color:var(--text);font-weight:500}
+
+/* WORKOUT */
+.exercise-item{margin-bottom:16px;border:0.5px solid var(--border);border-radius:8px;overflow:hidden}
+.exercise-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2)}
+.ex-name{font-size:13px;font-weight:500}
+.ex-add-set{font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer}
+.sets-table{padding:8px 14px}
+.set-header{display:grid;grid-template-columns:30px 1fr 1fr 50px;gap:8px;font-size:11px;color:var(--hint);padding:4px 0;border-bottom:0.5px solid var(--border);margin-bottom:6px}
+.set-row{display:grid;grid-template-columns:30px 1fr 1fr 50px;gap:8px;align-items:center;padding:4px 0}
+.set-row span{font-size:12px;color:var(--muted);font-family:monospace}
+.set-row input[type=number]{padding:5px 8px;font-size:13px;border:0.5px solid var(--border2);border-radius:6px;font-family:monospace;width:100%}
+.set-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
+.workout-history{display:flex;flex-direction:column}
+.wh-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.wh-item:last-child{border-bottom:none}
+.wh-date{font-size:12px;color:var(--hint);font-family:monospace;width:40px;flex-shrink:0}
+.wh-info{flex:1}
+.wh-name{font-size:13px;font-weight:500}
+.wh-detail{font-size:11px;color:var(--hint)}
+
+/* WEEK BARS */
+.week-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:16px}
+.wb-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+.wb-bar-wrap{height:100px;width:100%;display:flex;align-items:flex-end}
+.wb-bar{width:100%;border-radius:4px 4px 0 0}
+.wb-label{font-size:11px;color:var(--hint)}
+.wb-val{font-size:11px;color:var(--muted);font-family:monospace}
+
+/* ANALYSIS TABS */
+.analysis-tabs{display:flex;gap:4px;margin-bottom:16px}
+.atab{padding:7px 18px;border-radius:8px;border:0.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer}
+.atab.active{background:var(--surface);border-color:var(--border2);color:var(--text);font-weight:500}
+
+/* MEAL PLANNER */
+.planner-form{display:flex;flex-direction:column;gap:12px}
+.plan-day-title{font-size:15px;font-weight:600;margin-bottom:10px;padding-bottom:8px;border-bottom:0.5px solid var(--border)}
+.plan-meal-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:0.5px dashed var(--border)}
+.plan-meal-item:last-child{border-bottom:none}
+.plan-meal-type{width:90px;font-size:11px;font-weight:500;color:var(--accent-dk);background:var(--accent-lt);padding:3px 8px;border-radius:20px;text-align:center;flex-shrink:0}
+.plan-meal-name{font-size:13px;font-weight:500}
+.plan-meal-detail{font-size:11px;color:var(--hint);margin-top:2px}
+.plan-meal-cal{font-size:13px;color:var(--muted);font-family:monospace;margin-left:auto;white-space:nowrap}
+
+/* LOG TABLE */
+.log-del-btn{background:none;border:none;cursor:pointer;color:var(--hint);font-size:14px;padding:2px 6px;border-radius:4px}
+.log-del-btn:hover{color:#E24B4A;background:#FCEBEB}
+.log-totals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)}
+.log-total{text-align:center}
+.log-total-val{font-size:16px;font-weight:600}
+.log-total-label{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* SPINNER */
+.center-spinner{display:flex;align-items:center;gap:12px;padding:20px;color:var(--muted);font-size:13px}
+.spin-ring{width:20px;height:20px;border-radius:50%;border:2px solid var(--accent-lt);border-top-color:var(--accent);animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MODAL */
+.modal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center}
+.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px)}
+.modal-card{position:relative;background:var(--surface);border-radius:var(--r);padding:32px;width:100%;max-width:500px;z-index:1;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:20px;font-weight:600;margin-bottom:8px}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+.modal-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.modal-step{display:flex;align-items:flex-start;gap:12px;font-size:13px}
+.mstep-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:1px}
+.mstep-text{color:var(--muted);line-height:1.5}
+.mstep-text a{color:var(--accent);text-decoration:none;font-weight:500}
+.mstep-text strong{color:var(--text)}
+.modal-input-row{display:flex;gap:8px;margin-bottom:10px}
+.modal-input-row input{flex:1;padding:10px 12px;border:0.5px solid var(--border2);border-radius:8px;font-size:13px;color:var(--text);background:var(--surface);font-family:monospace}
+.modal-input-row input:focus{outline:none;border-color:var(--accent)}
+.modal-skip{width:100%;background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;padding:8px;text-decoration:underline;margin-top:4px}
+.free-pill{display:inline-block;background:#E1F5EE;color:#0F6E56;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:middle}
+
+/* PROFILE API SECTION */
+.api-status-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px}
+.api-status-bar.active{background:#E1F5EE;color:#085041}
+.api-status-bar.inactive{background:#FAEEDA;color:#633806}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .main{margin-left:0;padding:16px}
+  .metric-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col,.form-row-2,.form-row-3{grid-template-columns:1fr}
+  .src-macro-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
+  <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+  <div class="login-card">
+    <div class="login-logo"><div class="logo-ic">F</div>FitAI</div>
+    <div class="free-badge">✦ 100% Free — Powered by Google Gemini</div>
+    <h1 class="login-title">Your AI fitness companion</h1>
+    <p class="login-sub">Track calories, macros, workouts — AI-powered, completely free</p>
+    <div class="lform-g"><label>Your name</label><input type="text" id="l-name" placeholder="e.g. Arjun Kumar" value="Arjun Kumar"/></div>
+    <div class="lform-g"><label>Email</label><input type="email" id="l-email" placeholder="you@example.com" value="demo@fitai.com"/></div>
+    <div class="lform-g"><label>Password</label><input type="password" id="l-pass" placeholder="••••••••" value="demo123"/></div>
+    <button class="btn-primary" onclick="doLogin()">Get Started Free</button>
+    <p class="login-hint">Demo: click with pre-filled values to enter</p>
+  </div>
+</div>
+
+<!-- GEMINI KEY MODAL -->
+<div id="key-modal" class="modal hidden">
+  <div class="modal-bg" onclick="skipModal()"></div>
+  <div class="modal-card">
+    <div style="font-size:28px;margin-bottom:12px">✦</div>
+    <div class="modal-title">Activate Free AI Features</div>
+    <div class="modal-sub">FitAI uses Google Gemini AI — it's <strong>completely free</strong> with 1,500 requests/day. Get your free API key in 2 minutes:</div>
+    <div class="modal-steps">
+      <div class="modal-step"><div class="mstep-num">1</div><div class="mstep-text">Go to <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> — sign in with your Google account (free)</div></div>
+      <div class="modal-step"><div class="mstep-num">2</div><div class="mstep-text">Click <strong>"Create API Key"</strong> → copy the key (starts with <strong>AIza...</strong>)</div></div>
+      <div class="modal-step"><div class="mstep-num">3</div><div class="mstep-text">Paste it below. Key stays in your browser only — never sent anywhere else.</div></div>
+    </div>
+    <div class="modal-input-row">
+      <input type="password" id="modal-key" placeholder="AIzaSy..." autocomplete="off"/>
+      <button class="btn-primary sm" onclick="saveKeyFromModal()">Save & Activate</button>
+    </div>
+    <div id="modal-key-err" style="font-size:12px;color:#E24B4A;display:none;margin-bottom:8px"></div>
+    <div style="font-size:12px;color:var(--muted);background:var(--surface2);padding:10px;border-radius:8px;margin-bottom:10px">
+      💡 <strong>Why Gemini?</strong> Google gives 1,500 free AI requests/day forever. No credit card needed. No charges ever.
+    </div>
+    <button class="modal-skip" onclick="skipModal()">Skip for now — I'll add it later in Profile</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-ic sm">F</div>FitAI</div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showTab('dashboard')" data-tab="dashboard">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
+      <button class="nav-item" onclick="showTab('log')" data-tab="log">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Log Food</button>
+      <button class="nav-item" onclick="showTab('search')" data-tab="search">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>Food Search</button>
+      <button class="nav-item" onclick="showTab('workout')" data-tab="workout">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>Workout</button>
+      <button class="nav-item" onclick="showTab('charts')" data-tab="charts">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Charts</button>
+      <button class="nav-item" onclick="showTab('analysis')" data-tab="analysis">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>AI Analysis</button>
+      <button class="nav-item" onclick="showTab('planner')" data-tab="planner">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>Meal Planner</button>
+      <button class="nav-item" onclick="showTab('profile')" data-tab="profile">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</button>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-av" id="user-av">AK</div>
+      <div><div class="user-nm" id="user-nm">Arjun Kumar</div><div class="user-gl">Fat loss · 2,200 kcal</div></div>
+      <button class="logout-btn" onclick="doLogout()" title="Logout">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content active">
+      <div class="page-header">
+        <div><h1 class="page-title" id="greeting">Good morning 👋</h1><p class="page-sub" id="today-date"></p></div>
+        <span class="ai-badge">✦ Gemini AI · Free</span>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card"><div class="metric-icon" style="background:#E1F5EE">🔥</div><div class="metric-body"><div class="metric-label">Calories</div><div class="metric-value" id="d-cal">1,640</div><div class="metric-sub">of 2,200 kcal</div></div><div class="metric-ring"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#E1F5EE" stroke-width="4"/><circle cx="20" cy="20" r="16" fill="none" stroke="#1D9E75" stroke-width="4" stroke-dasharray="74.5 26" stroke-dashoffset="25" stroke-linecap="round"/></svg><span>74%</span></div></div>
+        <div class="metric-card"><div class="metric-icon" style="background:#E6F1FB">💪</div><div class="metric-body"><div class="metric-label">Protein</div><div class="metric-value">98g</div><div class="metric-sub">of 140g goal</div></div><div class="metric-ring"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#E6F1FB" stroke-width="4"/><circle cx="20" cy="20" r="16" fill="none" stroke="#378ADD" stroke-width="4" stroke-dasharray="70 30" stroke-dashoffset="25" stroke-linecap="round"/></svg><span>70%</span></div></div>
+        <div class="metric-card"><div class="metric-icon" style="background:#EAF3DE">💧</div><div class="metric-body"><div class="metric-label">Water</div><div class="metric-value">1.8L</div><div class="metric-sub">of 3L goal</div></div><div class="metric-ring"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#EAF3DE" stroke-width="4"/><circle cx="20" cy="20" r="16" fill="none" stroke="#639922" stroke-width="4" stroke-dasharray="60 40" stroke-dashoffset="25" stroke-linecap="round"/></svg><span>60%</span></div></div>
+        <div class="metric-card"><div class="metric-icon" style="background:#FAEEDA">🚶</div><div class="metric-body"><div class="metric-label">Steps</div><div class="metric-value">6,421</div><div class="metric-sub">of 10,000 goal</div></div><div class="metric-ring"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#FAEEDA" stroke-width="4"/><circle cx="20" cy="20" r="16" fill="none" stroke="#EF9F27" stroke-width="4" stroke-dasharray="64 36" stroke-dashoffset="25" stroke-linecap="round"/></svg><span>64%</span></div></div>
+      </div>
+      <div class="two-col">
+        <div class="card"><div class="card-header"><h3>Today's meals</h3><button class="card-action" onclick="showTab('log')">+ Add</button></div>
+          <div id="dash-meals">
+            <div class="food-row"><div class="food-info"><span class="food-name">Oats + banana</span><span class="food-macro">P:8g C:52g F:4g</span></div><span class="food-cal">340 kcal</span></div>
+            <div class="food-row"><div class="food-info"><span class="food-name">Chicken rice bowl</span><span class="food-macro">P:42g C:68g F:12g</span></div><span class="food-cal">580 kcal</span></div>
+            <div class="food-row"><div class="food-info"><span class="food-name">Greek yogurt</span><span class="food-macro">P:18g C:9g F:2g</span></div><span class="food-cal">140 kcal</span></div>
+            <div class="food-row"><div class="food-info"><span class="food-name">Protein shake</span><span class="food-macro">P:30g C:8g F:3g</span></div><span class="food-cal">180 kcal</span></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><h3>Macro breakdown</h3></div>
+          <div class="macro-section">
+            <div class="macro-row"><span class="macro-label">Protein</span><div class="macro-track"><div class="macro-fill" style="width:70%;background:#378ADD"></div></div><span class="macro-val">98/140g</span></div>
+            <div class="macro-row"><span class="macro-label">Carbs</span><div class="macro-track"><div class="macro-fill" style="width:80%;background:#EF9F27"></div></div><span class="macro-val">201/250g</span></div>
+            <div class="macro-row"><span class="macro-label">Fats</span><div class="macro-track"><div class="macro-fill" style="width:58%;background:#D85A30"></div></div><span class="macro-val">29/50g</span></div>
+            <div class="macro-row"><span class="macro-label">Fiber</span><div class="macro-track"><div class="macro-fill" style="width:52%;background:#5DCAA5"></div></div><span class="macro-val">13/25g</span></div>
+          </div>
+          <div class="ai-block"><button class="ai-btn" id="dash-ai-btn" onclick="runAI('dash')">✦ Get today's AI insight</button><div id="dash-ai-out" class="ai-out hidden"></div></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-header"><h3>AI suggestions</h3><span class="ai-badge sm">✦ Gemini</span></div>
+        <div class="suggestions">
+          <div class="sug-item"><div class="sug-icon" style="background:#E6F1FB">💧</div><div><div class="sug-text">1.2L short on water — drink a glass now and one before dinner.</div><div class="sug-tag">Hydration · High priority</div></div></div>
+          <div class="sug-item"><div class="sug-icon" style="background:#E1F5EE">💪</div><div><div class="sug-text">Protein on track! Add mixed nuts tonight to hit your fat goal.</div><div class="sug-tag">Macros · Medium</div></div></div>
+          <div class="sug-item"><div class="sug-icon" style="background:#FAEEDA">🚶</div><div><div class="sug-text">3,579 more steps — a 35-min post-dinner walk gets you there.</div><div class="sug-tag">Activity · Medium</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOG FOOD -->
+    <div id="tab-log" class="tab-content">
+      <div class="page-header"><h1 class="page-title">Log Food</h1></div>
+      <div class="two-col">
+        <div class="card"><div class="card-header"><h3>Add meal entry</h3></div>
+          <div class="form-stack">
+            <div class="form-group"><label>Food name</label><input type="text" id="log-name" placeholder="e.g. 2 chapati, 100g paneer, dal..."/></div>
+            <div class="form-row-2">
+              <div class="form-group"><label>Calories (kcal)</label><input type="number" id="log-cal" placeholder="320"/></div>
+              <div class="form-group"><label>Protein (g)</label><input type="number" id="log-prot" placeholder="28"/></div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group"><label>Carbs (g)</label><input type="number" id="log-carb" placeholder="45"/></div>
+              <div class="form-group"><label>Fats (g)</label><input type="number" id="log-fat" placeholder="12"/></div>
+            </div>
+            <div class="form-group"><label>Meal type</label><select id="log-meal"><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option><option>Pre-workout</option><option>Post-workout</option></select></div>
+            <button class="btn-primary" onclick="addLog()">Add to log</button>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><h3>Daily vitals</h3></div>
+          <div class="form-stack">
+            <div class="form-row-2"><div class="form-group"><label>Water (ml)</label><input type="number" id="log-water" placeholder="1800"/></div><div class="form-group"><label>Steps</label><input type="number" id="log-steps" placeholder="6421"/></div></div>
+            <div class="form-row-2"><div class="form-group"><label>Sleep (hrs)</label><input type="number" id="log-sleep" step="0.5" placeholder="7.5"/></div><div class="form-group"><label>Weight (kg)</label><input type="number" id="log-weight" step="0.1" placeholder="72.4"/></div></div>
+            <div class="form-row-2"><div class="form-group"><label>Workout done?</label><select id="log-workout"><option>Yes</option><option>No</option></select></div><div class="form-group"><label>Mood</label><select id="log-mood"><option>Great</option><option>Good</option><option>Okay</option><option>Tired</option></select></div></div>
+            <button class="btn-secondary" onclick="saveDailyVitals()">Save daily vitals</button>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div class="card-header"><h3>Today's log</h3></div>
+        <div id="log-list">
+          <div class="food-row"><div class="food-info"><span class="food-name">Oats + banana</span><span class="food-macro">P:8g C:52g F:4g · Breakfast</span></div><span class="food-cal">340 kcal</span></div>
+          <div class="food-row"><div class="food-info"><span class="food-name">Chicken rice bowl</span><span class="food-macro">P:42g C:68g F:12g · Lunch</span></div><span class="food-cal">580 kcal</span></div>
+        </div>
+        <div id="log-totals-bar" style="display:none">
+          <div class="log-totals">
+            <div class="log-total"><div class="log-total-val" id="t-cal" style="color:var(--accent)">0</div><div class="log-total-label">Total kcal</div></div>
+            <div class="log-total"><div class="log-total-val" id="t-prot" style="color:#378ADD">0g</div><div class="log-total-label">Protein</div></div>
+            <div class="log-total"><div class="log-total-val" id="t-carb" style="color:#EF9F27">0g</div><div class="log-total-label">Carbs</div></div>
+            <div class="log-total"><div class="log-total-val" id="t-fat" style="color:#D85A30">0g</div><div class="log-total-label">Fats</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOD SEARCH -->
+    <div id="tab-search" class="tab-content">
+      <div class="page-header"><h1 class="page-title">Food Search</h1><span class="ai-badge sm">✦ Free AI + Open Database</span></div>
+      <div class="card">
+        <div class="search-tabs">
+          <button class="stab active" onclick="setSearchTab('ai',this)">✦ AI Search (Gemini)</button>
+          <button class="stab" onclick="setSearchTab('db',this)">📦 Open Food Database</button>
+        </div>
+        <div id="search-ai-panel">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Type any food in plain English — Gemini AI fills all nutrition data automatically. Free, no limits.</p>
+          <div class="search-row"><input type="text" id="food-search-input" placeholder="e.g. 100g paneer, 2 chapati, 1 bowl dal..." onkeydown="if(event.key==='Enter')searchFoodAI()"/><button class="btn-primary" onclick="searchFoodAI()">Search</button></div>
+          <div class="quick-picks">
+            <span class="qp-label">Quick:</span>
+            <button class="chip" onclick="qs('100g chicken breast')">Chicken breast</button>
+            <button class="chip" onclick="qs('2 chapati')">2 Chapati</button>
+            <button class="chip" onclick="qs('1 bowl dal tadka')">Dal tadka</button>
+            <button class="chip" onclick="qs('100g paneer')">Paneer 100g</button>
+            <button class="chip" onclick="qs('1 banana')">Banana</button>
+            <button class="chip" onclick="qs('1 cup cooked rice')">Rice 1 cup</button>
+            <button class="chip" onclick="qs('2 boiled eggs')">2 Boiled eggs</button>
+            <button class="chip" onclick="qs('1 scoop whey protein')">Whey protein</button>
+          </div>
+        </div>
+        <div id="search-db-panel" style="display:none">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Search Open Food Facts — a free global food database with 3 million+ products. No AI key needed.</p>
+          <div class="search-row"><input type="text" id="food-db-input" placeholder="e.g. milk, oats, chicken..." onkeydown="if(event.key==='Enter')searchFoodDB()"/><button class="btn-primary" onclick="searchFoodDB()">Search</button></div>
+        </div>
+        <div id="search-spinner" class="center-spinner hidden"><div class="spin-ring"></div><span id="spin-text">Searching...</span></div>
+        <div id="search-result"></div>
+      </div>
+    </div>
+
+    <!-- WORKOUT -->
+    <div id="tab-workout" class="tab-content">
+      <div class="page-header"><h1 class="page-title">Workout Tracker</h1><button class="btn-primary sm" onclick="startNewWorkout()">+ New Workout</button></div>
+      <div class="two-col">
+        <div class="card"><div class="card-header"><h3 id="workout-title">Today's workout</h3><span class="badge green">Push</span></div>
+          <div id="exercise-list">
+            <div class="exercise-item"><div class="exercise-header"><span class="ex-name">Bench Press</span><button class="ex-add-set" onclick="addSet(this)">+ Set</button></div>
+              <div class="sets-table"><div class="set-header"><span>Set</span><span>Weight (kg)</span><span>Reps</span><span>Done</span></div>
+                <div class="set-row"><span>1</span><input type="number" value="60"/><input type="number" value="10"/><input type="checkbox" checked/></div>
+                <div class="set-row"><span>2</span><input type="number" value="65"/><input type="number" value="8"/><input type="checkbox" checked/></div>
+                <div class="set-row"><span>3</span><input type="number" value="70"/><input type="number" value="6"/><input type="checkbox"/></div>
+              </div>
+            </div>
+            <div class="exercise-item"><div class="exercise-header"><span class="ex-name">Overhead Press</span><button class="ex-add-set" onclick="addSet(this)">+ Set</button></div>
+              <div class="sets-table"><div class="set-header"><span>Set</span><span>Weight (kg)</span><span>Reps</span><span>Done</span></div>
+                <div class="set-row"><span>1</span><input type="number" value="40"/><input type="number" value="10"/><input type="checkbox" checked/></div>
+                <div class="set-row"><span>2</span><input type="number" value="45"/><input type="number" value="8"/><input type="checkbox"/></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button class="btn-secondary" onclick="addExercise()">+ Add exercise</button>
+            <button class="btn-primary" onclick="saveWorkout()">Save workout</button>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><h3>Workout history</h3></div>
+          <div class="workout-history">
+            <div class="wh-item"><div class="wh-date">Apr 27</div><div class="wh-info"><div class="wh-name">Pull Day</div><div class="wh-detail">6 exercises · 4,200 kg volume</div></div><span class="badge blue">Done</span></div>
+            <div class="wh-item"><div class="wh-date">Apr 26</div><div class="wh-info"><div class="wh-name">Leg Day</div><div class="wh-detail">5 exercises · 6,800 kg volume</div></div><span class="badge blue">Done</span></div>
+            <div class="wh-item"><div class="wh-date">Apr 25</div><div class="wh-info"><div class="wh-name">Push Day</div><div class="wh-detail">5 exercises · 3,900 kg volume</div></div><span class="badge blue">Done</span></div>
+          </div>
+          <div class="ai-block"><button class="ai-btn" id="workout-ai-btn" onclick="runAI('workout')">✦ Analyze workout progress</button><div id="workout-ai-out" class="ai-out hidden"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div id="tab-charts" class="tab-content">
+      <div class="page-header"><h1 class="page-title">Progress Charts</h1></div>
+      <div class="two-col">
+        <div class="card"><div class="card-header"><h3>Calorie history (7 days)</h3></div><div style="position:relative;height:220px"><canvas id="cal-chart"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3>Weight trend (30 days)</h3></div><div style="position:relative;height:220px"><canvas id="weight-chart"></canvas></div></div>
+      </div>
+      <div class="two-col">
+        <div class="card"><div class="card-header"><h3>Macro split today</h3></div><div style="position:relative;height:220px;display:flex;align-items:center;justify-content:center"><canvas id="macro-chart" style="max-width:220px"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3>Protein intake (7 days)</h3></div><div style="position:relative;height:220px"><canvas id="protein-chart"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- AI ANALYSIS -->
+    <div id="tab-analysis" class="tab-content">
+      <div class="page-header"><h1 class="page-title">AI Analysis</h1><span class="ai-badge sm">✦ Free · Gemini AI</span></div>
+      <div class="analysis-tabs">
+        <button class="atab active" onclick="setATab('daily',this)">Daily</button>
+        <button class="atab" onclick="setATab('weekly',this)">Weekly</button>
+        <button class="atab" onclick="setATab('monthly',this)">Monthly</button>
+      </div>
+      <div id="atab-daily">
+        <div class="metric-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="metric-card compact"><div class="metric-label">Health score</div><div class="metric-value green">78/100</div><div class="metric-sub">Up 4 pts</div></div>
+          <div class="metric-card compact"><div class="metric-label">Calorie accuracy</div><div class="metric-value">74%</div><div class="metric-sub">1,640 / 2,200 kcal</div></div>
+          <div class="metric-card compact"><div class="metric-label">Nutrient balance</div><div class="metric-value">82%</div><div class="metric-sub">Macros well-spread</div></div>
+        </div>
+        <div class="card"><button class="ai-btn wide" id="daily-ai-btn" onclick="runAI('daily')">✦ Analyze today's nutrition</button><div id="daily-ai-out" class="ai-out hidden"></div></div>
+      </div>
+      <div id="atab-weekly" class="hidden">
+        <div class="card" style="margin-bottom:16px"><div class="card-header"><h3>This week</h3></div>
+          <div class="week-bars">
+            <div class="wb-col"><div class="wb-bar-wrap"><div class="wb-bar" style="height:88%;background:#1D9E75"></div></div><div class="wb-label">Mon</div><div class="wb-val">1940</div></div>
+            <div class="wb-col"><div class="wb-bar-wrap"><div class="wb-bar" style="height:72%;background:#5DCAA5"></div></div><div class="wb-label">Tue</div><div class="wb-val">1590</div></div>
+            <div class="wb-col"><div class="wb-bar-wrap"><div class="wb-bar" style="height:95%;background:#1D9E75"></div></div><div class="wb-label">Wed</div><div class="wb-val">2100</div></div>
+            <div class="wb-col"><div class="wb-bar-wrap"><div class="wb-bar" style="height:60%;background:#EF9F27"></div></div><div class="wb-label">Thu</div><div class="wb-val">1320</div></div>
+            <div class="wb-col"><div class="wb-bar-wrap"><div class="wb-bar" style="height:74%;background:#5DCAA5"></div></div><div class="wb-label">Fri</div><div class="wb-val">1640</div></div>
+            <div class="wb-col"><div class="wb-bar-wrap"><div class="wb-bar" style="height:15%;background:#ddd"></div></div><div class="wb-label">Sat</div><div class="wb-val">—</div></div>
+            <div class="wb-col"><div class="wb-bar-wrap"><div class="wb-bar" style="height:15%;background:#ddd"></div></div><div class="wb-label">Sun</div><div class="wb-val">—</div></div>
+          </div>
+        </div>
+        <div class="card"><button class="ai-btn wide" id="weekly-ai-btn" onclick="runAI('weekly')">✦ Get weekly AI analysis</button><div id="weekly-ai-out" class="ai-out hidden"></div></div>
+      </div>
+      <div id="atab-monthly" class="hidden">
+        <div class="metric-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="metric-card compact"><div class="metric-label">Avg daily calories</div><div class="metric-value">1,820</div><div class="metric-sub">Goal: 2,200</div></div>
+          <div class="metric-card compact"><div class="metric-label">Weight change</div><div class="metric-value green">-1.6 kg</div><div class="metric-sub">This month</div></div>
+          <div class="metric-card compact"><div class="metric-label">Workout days</div><div class="metric-value">14</div><div class="metric-sub">of 28 days</div></div>
+        </div>
+        <div class="card"><button class="ai-btn wide" id="monthly-ai-btn" onclick="runAI('monthly')">✦ Generate monthly coach report</button><div id="monthly-ai-out" class="ai-out hidden"></div></div>
+      </div>
+    </div>
+
+    <!-- MEAL PLANNER -->
+    <div id="tab-planner" class="tab-content">
+      <div class="page-header"><h1 class="page-title">AI Meal Planner</h1><span class="ai-badge sm">✦ Free · Gemini AI</span></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><h3>Customize your plan</h3></div>
+        <div class="planner-form">
+          <div class="form-row-3">
+            <div class="form-group"><label>Goal</label><select id="plan-goal"><option>Fat loss</option><option>Muscle gain</option><option>Maintenance</option><option>Lean bulk</option></select></div>
+            <div class="form-group"><label>Calorie target</label><input type="number" id="plan-cal" value="2200"/></div>
+            <div class="form-group"><label>Cuisine preference</label><select id="plan-cuisine"><option>Indian</option><option>Mixed (Indian + Western)</option><option>Mediterranean</option><option>Any</option></select></div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group"><label>Dietary restriction</label><select id="plan-diet"><option>None</option><option>Vegetarian</option><option>Vegan</option><option>Gluten-free</option><option>Dairy-free</option></select></div>
+            <div class="form-group"><label>Meals per day</label><select id="plan-meals"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div>
+            <div class="form-group"><label>Plan duration</label><select id="plan-duration"><option>1 day</option><option selected>3 days</option><option>7 days</option></select></div>
+          </div>
+          <button class="btn-primary" onclick="generateMealPlan()">✦ Generate AI meal plan</button>
+        </div>
+      </div>
+      <div id="plan-spinner" class="center-spinner hidden"><div class="spin-ring"></div><span>Gemini is crafting your meal plan...</span></div>
+      <div id="plan-result"></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="tab-profile" class="tab-content">
+      <div class="page-header"><h1 class="page-title">Profile & Goals</h1></div>
+      <div class="two-col">
+        <div class="card"><div class="card-header"><h3>Personal details</h3></div>
+          <div class="form-stack">
+            <div class="form-row-2"><div class="form-group"><label>Name</label><input type="text" id="p-name" value="Arjun Kumar"/></div><div class="form-group"><label>Age</label><input type="number" value="26"/></div></div>
+            <div class="form-row-2"><div class="form-group"><label>Weight (kg)</label><input type="number" value="72.4" step="0.1"/></div><div class="form-group"><label>Height (cm)</label><input type="number" value="175"/></div></div>
+            <div class="form-row-2"><div class="form-group"><label>Gender</label><select><option>Male</option><option>Female</option><option>Other</option></select></div><div class="form-group"><label>Activity level</label><select><option>Sedentary</option><option selected>Lightly active</option><option>Moderately active</option><option>Very active</option></select></div></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><h3>Fitness goals</h3></div>
+          <div class="form-stack">
+            <div class="form-row-2"><div class="form-group"><label>Primary goal</label><select><option>Lose fat</option><option>Build muscle</option><option>Maintain</option><option>Lean bulk</option></select></div><div class="form-group"><label>Target weight (kg)</label><input type="number" value="68" step="0.1"/></div></div>
+            <div class="form-row-2"><div class="form-group"><label>Calorie target</label><input type="number" value="2200"/></div><div class="form-group"><label>Protein target (g)</label><input type="number" value="140"/></div></div>
+            <div class="form-row-2"><div class="form-group"><label>Daily water (L)</label><input type="number" value="3" step="0.1"/></div><div class="form-group"><label>Step goal</label><input type="number" value="10000"/></div></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-primary sm" style="margin-bottom:20px" onclick="saveProfile()">Save profile</button>
+
+      <!-- GEMINI KEY SECTION -->
+      <div class="card">
+        <div class="card-header"><h3>🔑 Gemini API Key <span class="free-pill">FREE</span></h3></div>
+        <div id="api-status-bar" class="api-status-bar inactive">⚠️ No API key — AI features disabled. Add your free Gemini key below.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.7">
+          <strong>How to get your FREE key (2 minutes):</strong><br/>
+          1. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com/app/apikey</a><br/>
+          2. Sign in with your Google account (Gmail)<br/>
+          3. Click <strong>"Create API Key"</strong> → copy it (starts with <strong>AIza...</strong>)<br/>
+          4. Paste below. That's it — 1,500 free AI requests every day!
+        </div>
+        <div class="search-row">
+          <input type="password" id="api-key-input" placeholder="AIzaSy..." style="font-family:monospace"/>
+          <button class="btn-primary sm" onclick="saveApiKey()">Save key</button>
+        </div>
+        <div id="api-key-status" style="font-size:12px;margin-top:8px"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+// ===== STATE =====
+let logItems = [
+  {name:'Oats + banana',cal:340,p:8,c:52,f:4,meal:'Breakfast'},
+  {name:'Chicken rice bowl',cal:580,p:42,c:68,f:12,meal:'Lunch'}
+];
+let chartsInited = false;
+let currentFood = null;
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  const d = document.getElementById('today-date');
+  if(d) d.textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const h = new Date().getHours();
+  const gr = document.getElementById('greeting');
+  if(gr) gr.textContent = (h<12?'Good morning':h<17?'Good afternoon':'Good evening') + ' 👋';
+
+  const k = getKey();
+  if(k) { updateKeyStatus(true); const i=document.getElementById('api-key-input'); if(i) i.value=k; }
+});
+
+// ===== AUTH =====
+function doLogin() {
+  const name = document.getElementById('l-name').value || 'User';
+  const email = document.getElementById('l-email').value;
+  const pass = document.getElementById('l-pass').value;
+  if(!email||!pass){showToast('Please fill in email and password');return;}
+  localStorage.setItem('fitai_user', name);
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('user-nm').textContent = name;
+  document.getElementById('user-av').textContent = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('greeting').textContent = greet() + ', ' + name.split(' ')[0] + ' 👋';
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  if(!getKey()) setTimeout(()=>document.getElementById('key-modal').classList.remove('hidden'),1000);
+  showToast('Welcome, ' + name.split(' ')[0] + '!');
+}
+function greet(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening';}
+function doLogout(){document.getElementById('app').classList.add('hidden');document.getElementById('login-screen').style.display='';}
+
+// ===== MODAL =====
+function skipModal(){document.getElementById('key-modal').classList.add('hidden');}
+function saveKeyFromModal(){
+  const k = document.getElementById('modal-key').value.trim();
+  const err = document.getElementById('modal-key-err');
+  if(!k||!k.startsWith('AIza')){err.textContent='Key should start with AIza... — check you copied it fully.';err.style.display='block';return;}
+  localStorage.setItem('fitai_gemini_key', k);
+  const inp=document.getElementById('api-key-input'); if(inp) inp.value=k;
+  updateKeyStatus(true);
+  skipModal();
+  showToast('✅ Gemini key saved! All AI features are now free & active.');
+}
+
+// ===== NAV =====
+function showTab(name){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  if(name==='charts') setTimeout(initCharts,50);
+}
+
+// ===== FOOD LOG =====
+function addLog(){
+  const name=document.getElementById('log-name').value.trim();
+  const cal=parseInt(document.getElementById('log-cal').value)||0;
+  const p=parseInt(document.getElementById('log-prot').value)||0;
+  const c=parseInt(document.getElementById('log-carb').value)||0;
+  const f=parseInt(document.getElementById('log-fat').value)||0;
+  const meal=document.getElementById('log-meal').value;
+  if(!name){showToast('Enter a food name');return;}
+  logItems.push({name,cal,p,c,f,meal});
+  renderLog();
+  ['log-name','log-cal','log-prot','log-carb','log-fat'].forEach(id=>document.getElementById(id).value='');
+  showToast(name+' added!');
+}
+
+function renderLog(){
+  const el=document.getElementById('log-list');
+  el.innerHTML = logItems.map((item,i)=>`
+    <div class="food-row">
+      <div class="food-info"><span class="food-name">${item.name}</span><span class="food-macro">P:${item.p}g C:${item.c}g F:${item.f}g · ${item.meal}</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="food-cal">${item.cal} kcal</span>
+        <button class="log-del-btn" onclick="removeLog(${i})">✕</button>
+      </div>
+    </div>`).join('');
+  const tc=logItems.reduce((s,i)=>s+i.cal,0);
+  const tp=logItems.reduce((s,i)=>s+i.p,0);
+  const tcarb=logItems.reduce((s,i)=>s+i.c,0);
+  const tf=logItems.reduce((s,i)=>s+i.f,0);
+  const tb=document.getElementById('log-totals-bar');
+  if(logItems.length>0){
+    tb.style.display='block';
+    document.getElementById('t-cal').textContent=tc;
+    document.getElementById('t-prot').textContent=tp+'g';
+    document.getElementById('t-carb').textContent=tcarb+'g';
+    document.getElementById('t-fat').textContent=tf+'g';
+  } else { tb.style.display='none'; }
+}
+function removeLog(i){logItems.splice(i,1);renderLog();}
+function saveDailyVitals(){showToast('Daily vitals saved!');}
+
+// ===== FOOD SEARCH =====
+function setSearchTab(tab,btn){
+  document.getElementById('search-ai-panel').style.display = tab==='ai'?'':'none';
+  document.getElementById('search-db-panel').style.display = tab==='db'?'':'none';
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function qs(q){document.getElementById('food-search-input').value=q; searchFoodAI();}
+
+async function searchFoodAI(){
+  const q=document.getElementById('food-search-input').value.trim();
+  if(!q){showToast('Enter a food to search');return;}
+  showSpinner('Looking up nutrition for '+q+'...');
+  document.getElementById('search-result').innerHTML='';
+
+  const prompt=`You are a nutrition database. For: "${q}", return ONLY a JSON object (no markdown, nothing else):
+{"name":"food name","serving":"serving size","calories":number,"protein":number,"carbs":number,"fats":number,"fiber":number,"sugar":number,"sodium":number,"notes":"one health sentence"}
+All macros in grams. Calories in kcal. Sodium in mg. Use accurate values.`;
+
+  try{
+    const text = await callGemini(prompt, 300);
+    const info = JSON.parse(text.replace(/```json|```/g,'').trim());
+    currentFood = info;
+    showFoodResult(info);
+  } catch(e){
+    document.getElementById('search-result').innerHTML=`<div style="color:var(--muted);padding:14px;font-size:13px;background:var(--surface2);border-radius:8px">
+      ${!getKey() ? '⚠️ Add your free Gemini API key in Profile to enable AI food search.' : '❌ Could not fetch data. Check your Gemini key in Profile.'}
+    </div>`;
+  }
+  hideSpinner();
+}
+
+async function searchFoodDB(){
+  const q=document.getElementById('food-db-input').value.trim();
+  if(!q){showToast('Enter a food to search');return;}
+  showSpinner('Searching Open Food Facts database...');
+  document.getElementById('search-result').innerHTML='';
+  try{
+    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=5`);
+    const data = await res.json();
+    const products = (data.products||[]).filter(p=>p.nutriments && p.product_name);
+    if(!products.length){document.getElementById('search-result').innerHTML='<div style="color:var(--muted);padding:14px;font-size:13px">No results found. Try a different search term.</div>';hideSpinner();return;}
+    document.getElementById('search-result').innerHTML = products.slice(0,4).map(p=>{
+      const n=p.nutriments;
+      const cal=Math.round(n['energy-kcal_100g']||n['energy_100g']/4.184||0);
+      const prot=Math.round(n.proteins_100g||0);
+      const carb=Math.round(n.carbohydrates_100g||0);
+      const fat=Math.round(n.fat_100g||0);
+      const fiber=Math.round(n.fiber_100g||0);
+      return `<div class="src-card" style="margin-bottom:10px">
+        <div class="src-header"><div><div class="src-name">${p.product_name.slice(0,40)}</div><div style="font-size:11px;color:var(--muted)">per 100g · ${p.brands||'Unknown brand'}</div></div><div style="text-align:right"><div class="src-cal">${cal}</div><div style="font-size:11px;color:var(--muted)">kcal</div></div></div>
+        <div class="src-macro-grid">
+          <div class="srm"><div class="srm-val" style="color:#378ADD">${prot}g</div><div class="srm-label">Protein</div></div>
+          <div class="srm"><div class="srm-val" style="color:#EF9F27">${carb}g</div><div class="srm-label">Carbs</div></div>
+          <div class="srm"><div class="srm-val" style="color:#D85A30">${fat}g</div><div class="srm-label">Fats</div></div>
+          <div class="srm"><div class="srm-val" style="color:#5DCAA5">${fiber}g</div><div class="srm-label">Fiber</div></div>
+        </div>
+        <button class="btn-primary" style="font-size:12px" onclick='addFromDB(${JSON.stringify({name:p.product_name,cal,p:prot,c:carb,f:fat})})'>+ Add to log</button>
+      </div>`;
+    }).join('');
+  } catch(e){
+    document.getElementById('search-result').innerHTML='<div style="color:var(--muted);padding:14px;font-size:13px">Could not reach database. Check your internet connection.</div>';
+  }
+  hideSpinner();
+}
+
+function showFoodResult(info){
+  document.getElementById('search-result').innerHTML=`
+    <div class="src-card">
+      <div class="src-header"><div><div class="src-name">${info.name}</div><div style="font-size:12px;color:var(--muted)">${info.serving}</div></div><div style="text-align:right"><div class="src-cal">${info.calories}</div><div style="font-size:11px;color:var(--muted)">kcal</div></div></div>
+      <div class="src-macro-grid">
+        <div class="srm"><div class="srm-val" style="color:#378ADD">${info.protein}g</div><div class="srm-label">Protein</div></div>
+        <div class="srm"><div class="srm-val" style="color:#EF9F27">${info.carbs}g</div><div class="srm-label">Carbs</div></div>
+        <div class="srm"><div class="srm-val" style="color:#D85A30">${info.fats}g</div><div class="srm-label">Fats</div></div>
+        <div class="srm"><div class="srm-val" style="color:#5DCAA5">${info.fiber}g</div><div class="srm-label">Fiber</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sugar: ${info.sugar}g · Sodium: ${info.sodium}mg</div>
+      <div style="font-size:12px;color:var(--muted);background:var(--surface2);padding:10px;border-radius:8px;margin-bottom:12px">${info.notes}</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+        <label style="font-size:12px;color:var(--muted)">Add to meal:</label>
+        <select id="meal-sel" style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:6px;font-size:12px;flex:1"><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option><option>Pre-workout</option><option>Post-workout</option></select>
+      </div>
+      <button class="btn-primary" onclick='addFromSearch(${JSON.stringify(info)})'>+ Add to today's log</button>
+    </div>`;
+}
+
+function addFromSearch(info){
+  const meal = document.getElementById('meal-sel')?.value || 'Snack';
+  logItems.push({name:info.name,cal:info.calories,p:info.protein,c:info.carbs,f:info.fats,meal});
+  renderLog();
+  showToast(info.name+' added!');
+}
+function addFromDB(item){
+  logItems.push({...item,meal:'Snack'});
+  renderLog();
+  showToast(item.name+' added!');
+}
+
+function showSpinner(txt){document.getElementById('search-spinner').classList.remove('hidden');document.getElementById('spin-text').textContent=txt||'Searching...';}
+function hideSpinner(){document.getElementById('search-spinner').classList.add('hidden');}
+
+// ===== WORKOUT =====
+function addSet(btn){
+  const tbl=btn.closest('.exercise-item').querySelector('.sets-table');
+  const n=tbl.querySelectorAll('.set-row').length+1;
+  const r=document.createElement('div'); r.className='set-row';
+  r.innerHTML=`<span>${n}</span><input type="number" value="60"/><input type="number" value="8"/><input type="checkbox"/>`;
+  tbl.appendChild(r);
+}
+function addExercise(){
+  const name=prompt('Exercise name (e.g. Deadlift, Squat):');
+  if(!name)return;
+  const el=document.createElement('div'); el.className='exercise-item';
+  el.innerHTML=`<div class="exercise-header"><span class="ex-name">${name}</span><button class="ex-add-set" onclick="addSet(this)">+ Set</button></div>
+    <div class="sets-table"><div class="set-header"><span>Set</span><span>Weight (kg)</span><span>Reps</span><span>Done</span></div>
+    <div class="set-row"><span>1</span><input type="number" value="60"/><input type="number" value="10"/><input type="checkbox"/></div></div>`;
+  document.getElementById('exercise-list').appendChild(el);
+}
+function saveWorkout(){showToast('Workout saved!');}
+function startNewWorkout(){document.getElementById('exercise-list').innerHTML='';document.getElementById('workout-title').textContent='New workout — '+new Date().toLocaleDateString('en-IN',{month:'short',day:'numeric'});showToast('New workout started!');}
+
+// ===== CHARTS =====
+function initCharts(){
+  if(chartsInited)return; chartsInited=true;
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  if(document.getElementById('cal-chart'))
+    new Chart(document.getElementById('cal-chart'),{type:'bar',data:{labels:days,datasets:[{label:'Calories',data:[1940,1590,2100,1320,1640,0,0],backgroundColor:['#1D9E75','#5DCAA5','#1D9E75','#EF9F27','#5DCAA5','#E1F5EE','#E1F5EE'],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:2500,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+  const wd=Array.from({length:23},(_,i)=>'Apr '+(i+1));
+  const wdata=[74.0,73.9,73.8,73.7,73.6,73.5,73.4,73.3,73.2,73.1,73.0,72.9,72.8,72.7,72.7,72.6,72.5,72.5,72.4,72.4,72.4,72.4,null];
+  if(document.getElementById('weight-chart'))
+    new Chart(document.getElementById('weight-chart'),{type:'line',data:{labels:wd,datasets:[{data:wdata,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.08)',borderWidth:2,pointRadius:2,fill:true,tension:0.35,spanGaps:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:71,max:75,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:9},maxTicksLimit:8}}}}});
+  if(document.getElementById('macro-chart'))
+    new Chart(document.getElementById('macro-chart'),{type:'doughnut',data:{labels:['Protein','Carbs','Fats'],datasets:[{data:[98,201,29],backgroundColor:['#378ADD','#EF9F27','#D85A30'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12}}}}});
+  if(document.getElementById('protein-chart'))
+    new Chart(document.getElementById('protein-chart'),{type:'line',data:{labels:days,datasets:[{data:[128,95,142,80,98,0,0],borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.08)',borderWidth:2,pointRadius:2,fill:true,tension:0.35},{data:[140,140,140,140,140,140,140],borderColor:'rgba(55,138,221,0.3)',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:50,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+}
+
+// ===== AI ANALYSIS =====
+const aiPrompts={
+  dash:`I tracked my fitness today: 1,640 kcal (goal 2,200), protein 98g/140g, carbs 201g, fats 29g, water 1.8L/3L, steps 6,421/10,000. Give me a warm, practical 3-sentence insight and one specific action I can take right now.`,
+  daily:`Analyze my nutrition today: 1,640 kcal/2,200, protein 98g/140g, carbs 201g/250g, fats 29g/50g, fiber 13g/25g, sleep 7h, workout done, water 1.8L/3L, steps 6,421/10,000, health score 78/100. Give detailed analysis: what went well, what needs improvement, 3 specific suggestions for tomorrow. Write in clear paragraphs, no bullet points.`,
+  weekly:`Weekly fitness: Mon 1940, Tue 1590, Wed 2100, Thu 1320, Fri 1640 kcal. Protein 70-80% of 140g goal most days. Workouts 3/5 days. Give a 4-5 sentence weekly pattern analysis, encouraging and practical.`,
+  monthly:`Monthly April: avg 1,820 kcal/day, weight 74.0→72.4 kg (-1.6 kg), 14 workout days/28, protein target 60% of days, avg sleep 6.8h. Write a motivating monthly coach review with a clear focus for next month.`,
+  workout:`Push day: Bench press 60×10, 65×8, 70×6; OHP 40×10, 45×8. Previous: Pull day 4200kg volume, Leg day 6800kg. Give a 4-sentence training analysis with progressive overload advice and what to focus on next session.`
+};
+
+async function runAI(type){
+  const btn=document.getElementById(type+'-ai-btn');
+  const out=document.getElementById(type+'-ai-out');
+  if(!btn||!out)return;
+  btn.disabled=true; btn.textContent='✦ Analyzing...';
+  out.classList.add('hidden');
+  try{
+    const text=await callGemini(aiPrompts[type],600);
+    out.textContent=text; out.classList.remove('hidden');
+  }catch(e){
+    out.textContent=getKey()?'AI request failed. Check your Gemini key in Profile.':'⚠️ Add your free Gemini API key in Profile → API Key section to enable AI analysis.';
+    out.classList.remove('hidden');
+  }
+  btn.disabled=false; btn.textContent='✦ Analyze again';
+}
+
+function setATab(name,btn){
+  ['daily','weekly','monthly'].forEach(t=>document.getElementById('atab-'+t).classList.toggle('hidden',t!==name));
+  document.querySelectorAll('.atab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ===== MEAL PLANNER =====
+async function generateMealPlan(){
+  const goal=document.getElementById('plan-goal').value;
+  const cal=document.getElementById('plan-cal').value;
+  const cuisine=document.getElementById('plan-cuisine').value;
+  const diet=document.getElementById('plan-diet').value;
+  const meals=document.getElementById('plan-meals').value;
+  const dur=document.getElementById('plan-duration').value;
+  document.getElementById('plan-spinner').classList.remove('hidden');
+  document.getElementById('plan-result').innerHTML='';
+  const prompt=`Create a ${dur} meal plan: goal=${goal}, ${cal} kcal/day, cuisine=${cuisine}, diet=${diet}, ${meals} meals/day.
+Return ONLY a JSON array (no markdown):
+[{"day":"Day 1","meals":[{"type":"Breakfast","name":"meal name","description":"brief desc","calories":400,"protein":25,"carbs":45,"fats":12}],"totalCalories":2200,"totalProtein":140}]
+Make meals realistic, culturally appropriate, varied and nutritious.`;
+  try{
+    const text=await callGemini(prompt,1200);
+    const plan=JSON.parse(text.replace(/```json|```/g,'').trim());
+    document.getElementById('plan-result').innerHTML=plan.map(day=>`
+      <div class="card">
+        <div class="plan-day-title">${day.day} — ${day.totalCalories} kcal · ${day.totalProtein}g protein</div>
+        ${day.meals.map(m=>`<div class="plan-meal-item"><span class="plan-meal-type">${m.type}</span><div style="flex:1"><div class="plan-meal-name">${m.name}</div><div class="plan-meal-detail">${m.description} · P:${m.protein}g C:${m.carbs}g F:${m.fats}g</div></div><span class="plan-meal-cal">${m.calories} kcal</span></div>`).join('')}
+      </div>`).join('');
+  }catch(e){
+    document.getElementById('plan-result').innerHTML=`<div class="card" style="color:var(--muted);font-size:13px">${getKey()?'Could not generate plan. Try again.':'⚠️ Add your free Gemini API key in Profile to generate meal plans.'}</div>`;
+  }
+  document.getElementById('plan-spinner').classList.add('hidden');
+}
+
+// ===== PROFILE =====
+function saveProfile(){showToast('Profile saved!');}
+function saveApiKey(){
+  const k=document.getElementById('api-key-input').value.trim();
+  if(!k){showToast('Please enter your API key');return;}
+  if(!k.startsWith('AIza')){showToast('Key should start with AIza...');return;}
+  localStorage.setItem('fitai_gemini_key',k);
+  updateKeyStatus(true);
+  showToast('✅ Gemini key saved! AI features are now active and free.');
+}
+function updateKeyStatus(active){
+  const bar=document.getElementById('api-status-bar');
+  const st=document.getElementById('api-key-status');
+  if(bar){bar.className='api-status-bar '+(active?'active':'inactive');bar.textContent=active?'✅ Gemini AI is active — 1,500 free requests/day!':'⚠️ No API key — AI features disabled. Add your free Gemini key below.';}
+  if(st){st.textContent=active?'✅ Key saved and active.':'';st.style.color=active?'var(--accent)':'var(--muted)';}
+}
+
+// ===== GEMINI API =====
+function getKey(){return localStorage.getItem('fitai_gemini_key')||'';}
+
+async function callGemini(prompt, maxTokens=600){
+  const key=getKey();
+  if(!key) throw new Error('No Gemini key');
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents:[{parts:[{text:prompt}]}],
+      generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}
+    })
+  });
+  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error');}
+  const data=await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+}
+
+// ===== TOAST =====
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.remove('hidden');
+  setTimeout(()=>t.classList.add('hidden'),2500);
+}
+</script>
+</body>
+</html>
