@@ -14,9 +14,9 @@
 
 ## 🌐 Live Demo
 
-**👉 [fitai.yourusername.github.io](https://yourusername.github.io/fitai/FitAI-Free.html)**
+**👉 [fitai.anand729-prog.github.io](https://anand729-prog/FitAI-Free.html)**
 
-> Replace `yourusername` with your GitHub username after deploying.
+
 
 ---
 
